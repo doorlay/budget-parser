@@ -6,10 +6,23 @@ DIRECTORY_NAME = "statements"
 class Purchase:
     def __init__(self, description, price):
         self.description = description 
-        self.price = price
+        self.price = extract_price(price)
 
     def __str__(self):
         return f"Description: {self.description}\nPrice: {self.price}"
+
+
+class Category:
+    def __init__(self, cat_id, name):
+        self.id = cat_id
+        self.name = name
+        self.amount = 0
+
+    def __repl__(self):
+        return f"{self.name}: ${self.amount}"
+
+    def __str__(self):
+        return f"{self.name}: ${self.amount}"
 
 
 # Given a string, determines if it's a date
@@ -23,6 +36,14 @@ def is_date(date_string: str) -> bool:
         return True
     else:
         return False 
+
+
+# Extract a purchase's price from the string containing it
+def extract_price(price_line: str) -> float:
+    try:
+        return float(price_line.replace("$", "").replace(",", "").strip())
+    except ValueError:
+        print(f"Cannot convert {price_line} to float.")
 
 
 # Given the extracted text of a Chase statement, create a list of Purchase objects
@@ -62,6 +83,7 @@ def parse_discover(text) -> list[Purchase]:
     return purchases
 
 
+# Given a PDF file name, extracts all text and returns a list of strings
 def extract_text(file_name: str) -> list[str]:
     doc = pymupdf.open(file_name)
     text_list = []
@@ -70,44 +92,50 @@ def extract_text(file_name: str) -> list[str]:
     return text_list
 
 
-def get_categories():
+# Get a dictionary of budget categories from the user
+def get_categories() -> dict[int, Category]:
     categories = dict() 
-    cat_num = 1
+    category_id = 1
     while True:
-        cat_name = input("Input category name, or 0 when done: ")
-        if cat_name in categories.values():
-            print("Category name in use, try again.")
-            continue
-        elif cat_name == "0":
+        new_category_name = input("Input category name, or 0 when done: ")
+        for category in categories.values():
+            if category.name == new_category_name: 
+                print("Category name in use, try again.") 
+                continue
+        if new_category_name == "0":
             break
         else:
-            categories[cat_num] = cat_name
-            cat_num += 1
+            categories[str(category_id)] = Category(category_id, new_category_name) 
+            category_id += 1
     return categories
 
-parsed = []
-# For each file in the queue
-for filename in os.listdir(DIRECTORY_NAME):
-    f = os.path.join(DIRECTORY_NAME, filename)
-    if os.path.isfile(f):
-        if "discover" in f:
-            text = extract_text(f)
-            parsed.extend(parse_discover(text))
-            # for p in parsed:
-            #     print(p.description)
-            #     print(p.price)
-        elif "chase" in f:
-            text = extract_text(f)
-            parsed.extend(parse_chase(text))
-            # for p in parsed:
-            #     print(p.description)
-            #       # print(p.price)
+
+# Parse all the statements in the statement folder, return a list of Purchase objects
+def parse_statements() -> list[Purchase]:
+    parsed = []
+    # For each file in the queue
+    for filename in os.listdir(DIRECTORY_NAME):
+        f = os.path.join(DIRECTORY_NAME, filename)
+        if os.path.isfile(f):
+            if "discover" in f:
+                text = extract_text(f)
+                parsed.extend(parse_discover(text))
+            elif "chase" in f:
+                text = extract_text(f)
+                parsed.extend(parse_chase(text))
+    return parsed
+
+
+# Prompts the user to sort each purchase into a category
+def sort_purchases(categories: dict[int, Category], purchases: list[Purchase]) -> None:
+    print(f"Categories: {categories}")
+    for i in range(len(purchases)):
+        category_num = input(f"Enter category for '{purchases[i].description}': ")
+        categories[category_num].amount += purchases[i].price  
+
 
 categories = get_categories()
-print(f"Categories: {categories}")
-for i in range(len(parsed)):
-    input(f"Enter category for '{parsed[i].description}': ")
-"""
-Desired output, print out categories and amounts.
-The categories will have been configured by me.
-"""
+purchases = parse_statements()
+sort_purchases(categories, purchases)
+for category in categories.values():
+    print(category)

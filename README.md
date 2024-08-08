@@ -4,7 +4,7 @@ A tool to help me do my budget faster by parsing bank statements and grouping tr
 | Bank                | Supported?          |
 | --------------------| --------------------|
 | Discover            | ✅                  |
-| Chase               | ❌ (in progress)    |
+| Chase               | ✅                  |
 
 ## Setup
 `python3 -m venv .venv`    
