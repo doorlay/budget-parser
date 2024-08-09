@@ -5,7 +5,7 @@ A tool to help me do my budget faster by parsing bank statements and grouping tr
 | --------------------| --------------------|
 | Discover            | ✅                  |
 | Chase               | ✅                  |
-
+| Venmo               | In Progress         |
 ## Setup
 `python3 -m venv .venv`    
 `source .venv/bin/activate`  

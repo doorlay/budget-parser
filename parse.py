@@ -19,10 +19,10 @@ class Category:
         self.amount = 0
 
     def __repl__(self):
-        return f"{self.name}: ${self.amount}"
+        return f"{self.name}: ${round(self.amount, 2)}"
 
     def __str__(self):
-        return f"{self.name}: ${self.amount}"
+        return f"{self.name}: ${round(self.amount, 2)}"
 
 
 # Given a string, determines if it's a date
@@ -44,6 +44,11 @@ def extract_price(price_line: str) -> float:
         return float(price_line.replace("$", "").replace(",", "").strip())
     except ValueError:
         print(f"Cannot convert {price_line} to float.")
+
+
+# TODO: Finish this function
+def parse_venmo(text) -> list[Purchase]:
+    pass
 
 
 # Given the extracted text of a Chase statement, create a list of Purchase objects
