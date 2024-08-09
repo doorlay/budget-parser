@@ -1,5 +1,6 @@
 import os
 import pymupdf
+import csv
 
 DIRECTORY_NAME = "statements"
 
@@ -41,14 +42,22 @@ def is_date(date_string: str) -> bool:
 # Extract a purchase's price from the string containing it
 def extract_price(price_line: str) -> float:
     try:
-        return float(price_line.replace("$", "").replace(",", "").strip())
+        return float(price_line.replace("+", "").replace("$", "").replace(",", "").replace(" ", ""))
     except ValueError:
         print(f"Cannot convert {price_line} to float.")
 
 
-# TODO: Finish this function
-def parse_venmo(text) -> list[Purchase]:
-    pass
+# Given a CSV filename for a Venmo statement, create a list of Purchase objects
+def parse_venmo(file_name: str) -> list[Purchase]:
+    purchases = [] 
+    with open(file_name, "r") as csv_obj:
+        csv_file = csv.reader(csv_obj)
+        for index, row in enumerate(csv_file):
+            if index < 4:
+                continue
+            description = f"{row[5]} from {row[7]}"
+            purchases.append(Purchase(description, row[8]))
+    return purchases
 
 
 # Given the extracted text of a Chase statement, create a list of Purchase objects
@@ -128,6 +137,8 @@ def parse_statements() -> list[Purchase]:
             elif "chase" in f:
                 text = extract_text(f)
                 parsed.extend(parse_chase(text))
+            elif "venmo" in f:
+                parsed.extend(parse_venmo(f))
     return parsed
 
 
