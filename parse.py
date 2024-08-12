@@ -16,6 +16,7 @@ class Purchase:
         return f"Description: {self.description}\nPrice: {self.price}"
 
 
+# Represents a budget category, customized by the user
 class Category:
     def __init__(self, name):
         self.name = name
@@ -28,7 +29,7 @@ class Category:
         return f"{self.name}: ${round(self.amount, 2)}"
 
 
-# Given a string, determines if it's a date
+# Given a string, determines if it's a date (in the context of bank statement formatting)
 def is_date(date_string: str) -> bool:
     split_date_string = date_string.split("/")
     if split_date_string != date_string:
@@ -49,6 +50,7 @@ def extract_price(price_line: str) -> float:
         print(f"Cannot convert {price_line} to float.")
 
 
+# Extract a purchase's price from the string containing it, but for Venmo (since we can have positive values)
 def extract_price_venmo(price_line: str) -> float:
     try:
         stripped_price = price_line.replace("$", "").replace(",", "").replace(" ", "")
@@ -66,8 +68,13 @@ def parse_venmo(file_name: str) -> list[Purchase]:
     with open(file_name, "r") as csv_obj:
         csv_file = csv.reader(csv_obj)
         for index, row in enumerate(csv_file):
+            # Ignore transfers from your Venmo account to your bank
             if row[3] == "Standard Transfer":
                 continue
+            # Ignore empty lines
+            if len(row[1]) == 0:
+                continue
+            # Ignore the metadata in the statement
             if index < 4:
                 continue
             if row[3] == "Charge":
@@ -159,7 +166,6 @@ def parse_statements() -> list[Purchase]:
 
 # Prompts the user to sort each purchase into a category
 def sort_purchases(categories: dict[str, Category], purchases: list[Purchase]) -> None:
-    print(f"Categories: {categories}")
     for i in range(len(purchases)):
         # Keep looping until user enters a valid category number
         while True:
@@ -173,6 +179,10 @@ def sort_purchases(categories: dict[str, Category], purchases: list[Purchase]) -
 
 categories = get_categories()
 purchases = parse_statements()
+# Print out each category so the user knows their options for sorting
+for category in categories.keys():
+    print(category)
 sort_purchases(categories, purchases)
+# After all sorting is complete, print out each category with their cumulative amounts
 for category in categories.values():
     print(category)
