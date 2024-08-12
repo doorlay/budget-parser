@@ -5,17 +5,19 @@ import csv
 DIRECTORY_NAME = "statements"
 
 class Purchase:
-    def __init__(self, description, price):
-        self.description = description 
-        self.price = extract_price(price)
+    def __init__(self, description, price, is_venmo=False):
+        self.description = description
+        if is_venmo:
+            self.price = extract_price_venmo(price)
+        else: 
+            self.price = extract_price(price)
 
     def __str__(self):
         return f"Description: {self.description}\nPrice: {self.price}"
 
 
 class Category:
-    def __init__(self, cat_id, name):
-        self.id = cat_id
+    def __init__(self, name):
         self.name = name
         self.amount = 0
 
@@ -47,16 +49,32 @@ def extract_price(price_line: str) -> float:
         print(f"Cannot convert {price_line} to float.")
 
 
+def extract_price_venmo(price_line: str) -> float:
+    try:
+        stripped_price = price_line.replace("$", "").replace(",", "").replace(" ", "")
+        if "-" in stripped_price:
+            return float(stripped_price.replace("-", ""))
+        elif "+" in stripped_price:
+            return 0 - float(stripped_price.replace("+", ""))
+    except ValueError:
+        print(f"Cannot convert {price_line} to float.")
+
+
 # Given a CSV filename for a Venmo statement, create a list of Purchase objects
 def parse_venmo(file_name: str) -> list[Purchase]:
     purchases = [] 
     with open(file_name, "r") as csv_obj:
         csv_file = csv.reader(csv_obj)
         for index, row in enumerate(csv_file):
+            if row[3] == "Standard Transfer":
+                continue
             if index < 4:
                 continue
-            description = f"{row[5]} from {row[7]}"
-            purchases.append(Purchase(description, row[8]))
+            if row[3] == "Charge":
+                description = f"{row[6]} charged {row[7]} for {row[5]}"
+            if row[3] == "Payment":
+                description = f"{row[6]} paid {row[7]} for {row[5]}"
+            purchases.append(Purchase(description, row[8], is_venmo=True))
     return purchases
 
 
@@ -109,18 +127,15 @@ def extract_text(file_name: str) -> list[str]:
 # Get a dictionary of budget categories from the user
 def get_categories() -> dict[int, Category]:
     categories = dict() 
-    category_id = 1
     while True:
         new_category_name = input("Input category name, or 0 when done: ")
-        for category in categories.values():
-            if category.name == new_category_name: 
-                print("Category name in use, try again.") 
-                continue
+        if new_category_name in categories:
+            print("Category name in use, try again.")
+            continue
         if new_category_name == "0":
             break
         else:
-            categories[str(category_id)] = Category(category_id, new_category_name) 
-            category_id += 1
+            categories[new_category_name] = Category(new_category_name)
     return categories
 
 
@@ -143,11 +158,17 @@ def parse_statements() -> list[Purchase]:
 
 
 # Prompts the user to sort each purchase into a category
-def sort_purchases(categories: dict[int, Category], purchases: list[Purchase]) -> None:
+def sort_purchases(categories: dict[str, Category], purchases: list[Purchase]) -> None:
     print(f"Categories: {categories}")
     for i in range(len(purchases)):
-        category_num = input(f"Enter category for '{purchases[i].description}': ")
-        categories[category_num].amount += purchases[i].price  
+        # Keep looping until user enters a valid category number
+        while True:
+            category_name = input(f"Enter category for '{purchases[i].description}': ")
+            try:
+                categories[category_name].amount += purchases[i].price 
+                break 
+            except KeyError:
+                print(f"Invalid category name entered, please try again.")
 
 
 categories = get_categories()
