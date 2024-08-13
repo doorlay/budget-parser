@@ -6,7 +6,7 @@ A tool to help me do my budget faster by parsing bank statements and grouping tr
 | Discover            | ✅                  | `discover.pdf`       |
 | Chase               | ✅                  | `chase.pdf`          |
 | Venmo               | ✅                  | `venmo.csv`          |
-| Capital One         | In Progress         | N/A                  |
+| Capital One         | ✅                  | `capitalone.pdf`     |
 | Charles Schwab      | In Progress         | N/A                  |
 
 ## Setup

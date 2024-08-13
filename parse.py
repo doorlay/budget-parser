@@ -4,6 +4,21 @@ import csv
 
 DIRECTORY_NAME = "statements"
 
+CAPITALONE_MONTHS = {
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec"
+}
+
 class Purchase:
     def __init__(self, description, price, is_venmo=False):
         self.description = description
@@ -42,6 +57,21 @@ def is_date(date_string: str) -> bool:
         return False 
 
 
+# Given a string, determines if it's a date (in CapitalOne's formatting)
+def is_date_capitalone(date_string: str) -> bool:
+    split_date_string = date_string.strip().split(" ")
+    if len(split_date_string) != 2:
+        return False
+    if split_date_string[0].lower() in CAPITALONE_MONTHS:
+        try:
+            int(split_date_string[1])
+        except ValueError:
+            return False
+        return True
+    else:
+        return False
+
+
 # Extract a purchase's price from the string containing it
 def extract_price(price_line: str) -> float:
     try:
@@ -60,6 +90,31 @@ def extract_price_venmo(price_line: str) -> float:
             return 0 - float(stripped_price.replace("+", ""))
     except ValueError:
         print(f"Cannot convert {price_line} to float.")
+
+
+# Given the extracted text of a Capital One statement, create a list of purchase objects
+def parse_capitalone(text) -> list[Purchase]:
+    lines = text[2].split("Transactions \nTrans Date \nPost Date \nDescription \nAmount")[1].split("\n")[1:]
+    purchases = []
+    for index, line in enumerate(lines):
+        # If the current line is a date, it is potentially the beginning of a new row
+        if is_date_capitalone(line):
+            # Beginning of new line has two sequential dates. Confirm that to prevent duplicates
+            if not is_date_capitalone(lines[index + 1]):
+                continue 
+            offset = 2
+            purchase_description = ""
+            purchase_amount = "" 
+            # Iterate through the remaining columns in the document to grab all purchase data
+            while True:
+                description = lines[index + offset]
+                if "$" in description:
+                    purchase_amount = description[1:].split(" ")[0] 
+                    purchases.append(Purchase(purchase_description, purchase_amount))
+                    break
+                purchase_description += description
+                offset += 1
+    return purchases
 
 
 # Given a CSV filename for a Venmo statement, create a list of Purchase objects
@@ -167,6 +222,9 @@ def parse_statements() -> list[Purchase]:
                 parsed.extend(parse_chase(text))
             elif "venmo" in f:
                 parsed.extend(parse_venmo(f))
+            elif "capitalone" in f:
+                text = extract_text(f)
+                parsed.extend(parse_capitalone(text))
     return parsed
 
 
