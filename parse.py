@@ -87,7 +87,7 @@ def parse_venmo(file_name: str) -> list[Purchase]:
 
 # Given the extracted text of a Chase statement, create a list of Purchase objects
 def parse_chase(text) -> list[Purchase]:
-    lines = text[2].split("$ Amount")[1].split("\n")[1:] 
+    lines = text[2].split("$ Amount")[1].split("\n")[4:]
     purchases = []
     for i in range(0, len(lines), 3):
         if is_date(lines[i]):
@@ -113,6 +113,12 @@ def parse_discover(text) -> list[Purchase]:
             # Iterate through the remaining columns in the document to grab all purchase data
             while True:
                 description = lines[index + offset]
+                # If this line is for a card payment, skip it 
+                if "Payments and Credits" in description:
+                    break
+                # If this line is for a statement credit redemeption, skip it
+                if "AUTOMATIC STATEMENT CREDIT" in description:
+                    break
                 if "$" in description:
                     purchase_amount = description[2:].split(" ")[0] 
                     purchases.append(Purchase(purchase_description, purchase_amount))
