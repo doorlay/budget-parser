@@ -92,6 +92,20 @@ def extract_price_venmo(price_line: str) -> float:
         print(f"Cannot convert {price_line} to float.")
 
 
+# Given the extracted text of a Bank of America statement, create a list of purchase objects
+def parse_bofa(text) -> list[Purchase]:
+    lines = text[2].split("Purchases and Adjustments")[1].split("TOTAL PURCHASES AND ADJUSTMENTS FOR THIS PERIOD")[0].split("\n")
+    purchases = []
+    for index, line in enumerate(lines):
+        # If the current line is a date, it is potentially the beginning of a new row
+        if is_date(line):
+            # Beginning of new line has two sequential dates. Confirm that to prevent duplicates
+            if not is_date(lines[index + 1]):
+                continue 
+            purchases.append(Purchase(lines[index+2], lines[index+5]))
+    return purchases
+
+
 # Given the extracted text of a Capital One statement, create a list of purchase objects
 def parse_capitalone(text) -> list[Purchase]:
     lines = text[2].split("Transactions \nTrans Date \nPost Date \nDescription \nAmount")[1].split("\n")[1:]
@@ -225,6 +239,9 @@ def parse_statements() -> list[Purchase]:
             elif "capitalone" in f:
                 text = extract_text(f)
                 parsed.extend(parse_capitalone(text))
+            elif "bofa" in f:
+                text = extract_text(f)
+                parse_bofa(text)
     return parsed
 
 
