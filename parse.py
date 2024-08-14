@@ -92,6 +92,22 @@ def extract_price_venmo(price_line: str) -> float:
         print(f"Cannot convert {price_line} to float.")
 
 
+# Given the extracted text of a Charles Schwab statement, create a list of purchase objects
+def parse_schwab(file_name: str) -> list[Purchase]:
+    purchases = []
+    with open(file_name, "r") as csv_obj:
+        csv_file = csv.reader(csv_obj)
+        for index, row in enumerate(csv_file):
+            # Ignore the CSV headers
+            if index == 0:
+                continue
+            # If not a withdrawl from your account, ignore
+            if row[5] == "":
+                continue
+            purchases.append(Purchase(row[4], row[5]))
+    return purchases
+
+
 # Given the extracted text of a Bank of America statement, create a list of purchase objects
 def parse_bofa(text) -> list[Purchase]:
     lines = text[2].split("Purchases and Adjustments")[1].split("TOTAL PURCHASES AND ADJUSTMENTS FOR THIS PERIOD")[0].split("\n")
@@ -241,7 +257,9 @@ def parse_statements() -> list[Purchase]:
                 parsed.extend(parse_capitalone(text))
             elif "bofa" in f:
                 text = extract_text(f)
-                parse_bofa(text)
+                parsed.extend(parse_bofa(text))
+            elif "schwab" in f:
+                parsed.extend(parse_schwab(f))
     return parsed
 
 
